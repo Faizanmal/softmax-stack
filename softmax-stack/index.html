@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Looksmax Score Calculator — concept for looksmaxxing.guide</title>
+  <meta name="description" content="Interactive six-category Looksmax Score calculator matching looksmaxxing.guide weights. Private calibration tool — not a clinical diagnosis." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #121214;
+      --line: #2b2b30;
+      --text: #f4f1ea;
+      --muted: #9b968c;
+      --gold: #d4a017;
+      --gold-soft: #f0d27a;
+      --ok: #7dba8a;
+      --warn: #d2b15a;
+      --bad: #c96252;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Manrope, system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse 70% 45% at 80% -5%, #3a2c12 0%, transparent 50%),
+        radial-gradient(ellipse 50% 40% at 10% 0%, #1a1a22 0%, transparent 45%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap { width: min(880px, calc(100% - 2rem)); margin: 0 auto; padding: 2.25rem 0 4rem; }
+
+    .brand {
+      display: inline-flex; align-items: center; gap: .55rem;
+      color: var(--gold); font-size: .72rem; letter-spacing: .16em;
+      text-transform: uppercase; font-weight: 700;
+    }
+
+    h1 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(2.35rem, 6vw, 3.5rem);
+      line-height: 1.02; margin: .55rem 0 .7rem; font-weight: 600;
+    }
+
+    .lede { color: var(--muted); max-width: 40rem; line-height: 1.55; margin: 0 0 1.4rem; }
+
+    .disclaimer {
+      font-size: .82rem; color: #b7b1a4; border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 80%, black);
+      border-radius: 12px; padding: .85rem 1rem; margin-bottom: 1.25rem; line-height: 1.45;
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--panel) 94%, black);
+      border: 1px solid var(--line); border-radius: 16px; padding: 1.1rem 1.15rem 1.25rem;
+    }
+
+    .cat { padding: 1rem 0; border-bottom: 1px solid var(--line); }
+    .cat:last-of-type { border-bottom: 0; }
+
+    .cat-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+    .cat h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+    .weight { color: var(--gold); font-size: .78rem; font-weight: 700; letter-spacing: .04em; }
+    .hint { margin: .35rem 0 .7rem; color: var(--muted); font-size: .84rem; line-height: 1.4; }
+
+    .slider-row { display: grid; grid-template-columns: 1fr auto; gap: .75rem; align-items: center; }
+    input[type="range"] { width: 100%; accent-color: var(--gold); }
+    .val {
+      min-width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums;
+      font-weight: 700; color: var(--gold-soft); font-size: 1.05rem;
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1rem; }
+    button {
+      font: inherit; border-radius: 10px; padding: .78rem 1.1rem; cursor: pointer; border: 0;
+    }
+    .primary { background: var(--gold); color: #111; font-weight: 700; }
+    .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+
+    #out { display: none; margin-top: 1.25rem; }
+    #out.show { display: block; }
+
+    .scorebox {
+      display: grid; gap: 1rem; margin-bottom: 1rem;
+    }
+    @media (min-width: 640px) {
+      .scorebox { grid-template-columns: 180px 1fr; align-items: stretch; }
+    }
+
+    .total {
+      border: 1px solid var(--line); border-radius: 16px; background: #0e0e10;
+      display: grid; place-items: center; padding: 1.2rem; text-align: center;
+    }
+    .total .num {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 4rem; line-height: 1; color: var(--gold-soft);
+    }
+    .total .label { color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; margin-top: .35rem; }
+
+    .breakdown { border: 1px solid var(--line); border-radius: 16px; background: #0e0e10; padding: 1rem; }
+    .bar-row { display: grid; grid-template-columns: 8.5rem 1fr 2.2rem; gap: .55rem; align-items: center; margin: .45rem 0; }
+    .bar-row span { font-size: .78rem; color: var(--muted); }
+    .bar-row strong { font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .track { height: 8px; background: #1c1c20; border-radius: 99px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold-dim, #8a7020), var(--gold)); }
+
+    .advice {
+      margin-top: .25rem; border-left: 3px solid var(--gold);
+      padding: .85rem 1rem; background: color-mix(in srgb, var(--gold) 10%, transparent);
+      border-radius: 0 12px 12px 0; line-height: 1.5; color: #e8e0d0; font-size: .92rem;
+    }
+
+    .stack {
+      margin-top: 1rem; display: grid; gap: .65rem;
+    }
+    .card {
+      border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; background: #0e0e10;
+    }
+    .card h3 { margin: 0 0 .35rem; font-size: .95rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.45; }
+    .tag {
+      display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: .3rem;
+    }
+
+    .foot { margin-top: 1.4rem; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+    a { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand">looksmaxxing.guide · concept tool</div>
+    <h1>Looksmax Score Calculator</h1>
+    <p class="lede">
+      Rate yourself across the six categories the site already documents. Get a weighted total,
+      your bottleneck category, and a softmax-first next step — privately, in the browser.
+    </p>
+    <p class="disclaimer">
+      Educational / entertainment only. Not medical advice. Rate from neutral photos, not the mirror.
+      Re-check every ~90 days. Don’t post scores to forums.
+    </p>
+
+    <section class="panel" id="form" aria-label="Score inputs"></section>
+
+    <div class="actions">
+      <button class="primary" id="calc" type="button">Calculate score</button>
+      <button class="ghost" id="reset" type="button">Reset to 5s</button>
+    </div>
+
+    <section id="out" aria-live="polite">
+      <div class="scorebox">
+        <div class="total">
+          <div>
+            <div class="num" id="total">—</div>
+            <div class="label">Looksmax score</div>
+          </div>
+        </div>
+        <div class="breakdown" id="bars"></div>
+      </div>
+      <div class="advice" id="advice"></div>
+      <div class="stack" id="next"></div>
+      <p class="foot">
+        Built to fill the missing interactive layer on
+        <a href="https://looksmaxxing.guide/en/looksmax-score/" target="_blank" rel="noopener">/en/looksmax-score/</a>
+        for a We The Flywheel application task. Heuristic next steps only.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const CATS = [
+      {
+        id: "face",
+        name: "Facial Harmony",
+        weight: 0.25,
+        hint: "Symmetry, proportions, bone structure (jaw, cheekbones, eye area)."
+      },
+      {
+        id: "physique",
+        name: "Physique & Fitness",
+        weight: 0.20,
+        hint: "Body composition, posture, frame. Most trainable big lever."
+      },
+      {
+        id: "skin",
+        name: "Skin Quality",
+        weight: 0.15,
+        hint: "Clarity, tone, texture, hydration. Fastest 90-day mover with SPF + retinoid."
+      },
+      {
+        id: "hair",
+        name: "Hair",
+        weight: 0.15,
+        hint: "Density, hairline, cut quality, conditioning."
+      },
+      {
+        id: "style",
+        name: "Grooming & Style",
+        weight: 0.15,
+        hint: "Fit, colors, facial hair management, scent. Highest short-term ROI."
+      },
+      {
+        id: "jaw",
+        name: "Jawline Definition",
+        weight: 0.10,
+        hint: "Often body-fat driven more than bone. Visible change at lower BF%."
+      }
+    ];
+
+    const NEXT = {
+      face: {
+        tag: "Hardest category",
+        title: "Protect + optimize presentation",
+        body: "Bone structure moves slowly. Prioritize haircut framing, skincare, lighting-honest photos, and skip trauma myths (bonesmashing)."
+      },
+      physique: {
+        tag: "Bottleneck",
+        title: "Lift + protein consistency",
+        body: "3x compound lifting and rough calorie awareness usually move this faster than gadgets. Track progress photos monthly."
+      },
+      skin: {
+        tag: "Fast win",
+        title: "SPF daily + gentle retinoid path",
+        body: "Cleanser, moisturizer, SPF every morning. Add a clinician-guided retinoid if acne/texture is the drag."
+      },
+      hair: {
+        tag: "Time-sensitive",
+        title: "Cut + early clinical consult",
+        body: "Fix the cut this week. If recession is active, get an evidence-based consult early — forums are not a pharmacy."
+      },
+      style: {
+        tag: "Highest ROI",
+        title: "Fit over logos wardrobe pass",
+        body: "One fitted shirt, correct pant length, brow cleanup, and a simple scent beat most hardmaxxing cosplay."
+      },
+      jaw: {
+        tag: "Composition lever",
+        title: "Body fat + posture before devices",
+        body: "Jawline definition usually tracks body fat and forward-head posture more than chewing tools. Softmax first."
+      }
+    };
+
+    const form = document.getElementById("form");
+    form.innerHTML = CATS.map((c) => `
+      <div class="cat">
+        <div class="cat-head">
+          <h2>${c.name}</h2>
+          <div class="weight">${Math.round(c.weight * 100)}%</div>
+        </div>
+        <p class="hint">${c.hint}</p>
+        <div class="slider-row">
+          <input type="range" min="1" max="10" step="1" value="5" id="${c.id}" aria-label="${c.name} rating 1 to 10" />
+          <div class="val" id="${c.id}-val">5</div>
+        </div>
+      </div>
+    `).join("");
+
+    CATS.forEach((c) => {
+      const input = document.getElementById(c.id);
+      const label = document.getElementById(`${c.id}-val`);
+      input.addEventListener("input", () => { label.textContent = input.value; });
+    });
+
+    function values() {
+      return CATS.map((c) => ({
+        ...c,
+        score: Number(document.getElementById(c.id).value)
+      }));
+    }
+
+    function band(total) {
+      if (total < 50) return "Foundation phase: sleep, food, gym basics, SPF, and a real haircut before anything exotic.";
+      if (total < 65) return "Solid middle: attack the lowest category for 90 days. Don’t spray effort everywhere.";
+      if (total < 75) return "Above average: marginal gains come from consistency and one bottleneck, not stack-chasing.";
+      return "High band: protect what works. Fancy hardmaxxing has worse risk/reward unless a clinician identifies a specific deficit.";
+    }
+
+    function calculate() {
+      const rows = values();
+      const total = Math.round(rows.reduce((sum, r) => sum + r.score * 10 * r.weight, 0));
+      const worst = rows.slice().sort((a, b) => a.score - b.score)[0];
+
+      document.getElementById("total").textContent = total;
+      document.getElementById("bars").innerHTML = rows.map((r) => `
+        <div class="bar-row">
+          <span>${r.name}</span>
+          <div class="track"><div class="fill" style="width:${r.score * 10}%"></div></div>
+          <strong>${r.score}/10</strong>
+        </div>
+      `).join("");
+
+      document.getElementById("advice").textContent =
+        `Lowest category: ${worst.name} (${worst.score}/10). ${band(total)}`;
+
+      const tip = NEXT[worst.id];
+      document.getElementById("next").innerHTML = `
+        <article class="card">
+          <div class="tag">${tip.tag}</div>
+          <h3>${tip.title}</h3>
+          <p>${tip.body}</p>
+        </article>
+        <article class="card">
+          <div class="tag">Harm reduction</div>
+          <h3>What this tool will never recommend</h3>
+          <p>Bonesmashing, DIY injectables/acids, or unsupervised drug stacks. Those fail both evidence and safety — which is exactly the editorial gap looksmaxxing.guide is trying to fill.</p>
+        </article>
+      `;
+
+      const out = document.getElementById("out");
+      out.classList.add("show");
+      out.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    document.getElementById("calc").addEventListener("click", calculate);
+    document.getElementById("reset").addEventListener("click", () => {
+      CATS.forEach((c) => {
+        const input = document.getElementById(c.id);
+        input.value = 5;
+        document.getElementById(`${c.id}-val`).textContent = "5";
+      });
+      document.getElementById("out").classList.remove("show");
+    });
+  </script>
+</body>
+</html>
